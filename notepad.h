@@ -8,8 +8,7 @@ namespace Ui {
 class Notepad;
 }
 
-class Notepad : public QMainWindow
-{
+class Notepad : public QMainWindow {
     Q_OBJECT
 
 public:
@@ -20,7 +19,7 @@ private slots:
     void on_actionNew_triggered();
     void on_actionOpen_triggered();
     void on_actionSave_triggered();
-    void on_actionSave_As_triggered();
+    int on_actionSave_As_triggered();
     void on_actionPrint_triggered();
     void on_actionExit_triggered();
     void on_actionCut_triggered();
@@ -32,6 +31,7 @@ private slots:
 private:
     Ui::Notepad *ui;
     QString currentFile;
+    QString warning;
 };
 
 #endif // NOTEPAD_H

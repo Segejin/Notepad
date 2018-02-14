@@ -1,11 +1,10 @@
 #include "notepad.h"
 #include <QApplication>
 
-int main(int argc, char *argv[])
-{
-    QApplication a(argc, argv);
-    Notepad w;
-    w.show();
+int main(int argc, char *argv[]) {
+    QApplication application(argc, argv);
+    Notepad notepad;
+    notepad.show();
 
-    return a.exec();
+    return application.exec();
 }
