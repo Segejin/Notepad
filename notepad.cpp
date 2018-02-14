@@ -48,13 +48,12 @@ void Notepad::on_actionSave_triggered() {
     int digits;
     while(Notepad::fileExists(currentFile)) {
         QByteArray data = currentFile.toUtf8();
-        int i = (int)data.at(data.length() - 1) - 48;
+        int i = static_cast<int>(data.at(data.length() - 1)) - 48;
         digits = Notepad::numDigits(i);
         data.replace(data.length() - digits, digits, QByteArray::number(i + 1));
         currentFile = QString::fromUtf8(data.data());
     }
     QFile file(currentFile);
-    //qInfo() << file.fileName();
     if (!file.open(QIODevice::WriteOnly | QFile::Text)) {
         QMessageBox::warning(this, "..", "File not saved");
         return;
