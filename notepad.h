@@ -28,6 +28,7 @@ private slots:
     void on_actionUndo_triggered();
     void on_actionRedo_triggered();
     bool fileExists(QString path);
+    int numDigits(int x);
 
 private:
     Ui::Notepad *ui;

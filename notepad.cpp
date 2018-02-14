@@ -45,10 +45,12 @@ void Notepad::on_actionOpen_triggered() {
 }
 
 void Notepad::on_actionSave_triggered() {
+    int digits;
     while(Notepad::fileExists(currentFile)) {
         QByteArray data = currentFile.toUtf8();
         int i = (int)data.at(data.length() - 1) - 48;
-        data.replace(data.length() - 1, 1, QByteArray::number(i + 1));
+        digits = Notepad::numDigits(i);
+        data.replace(data.length() - digits, digits, QByteArray::number(i + 1));
         currentFile = QString::fromUtf8(data.data());
     }
     QFile file(currentFile);
@@ -130,4 +132,18 @@ bool Notepad::fileExists(QString path) {
         return true;
     }
     return false;
+}
+
+int Notepad::numDigits(int x) {
+    x = abs(x);
+    return (x < 10 ? 1 :
+        (x < 100 ? 2 :
+        (x < 1000 ? 3 :
+        (x < 10000 ? 4 :
+        (x < 100000 ? 5 :
+        (x < 1000000 ? 6 :
+        (x < 10000000 ? 7 :
+        (x < 100000000 ? 8 :
+        (x < 1000000000 ? 9 :
+        10)))))))));
 }
