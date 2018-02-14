@@ -4,7 +4,7 @@
 Notepad::Notepad(QWidget *parent) : QMainWindow(parent), ui(new Ui::Notepad) {
     ui->setupUi(this);
     this->setCentralWidget(ui->textEdit);
-    this->currentFile = "New Document";
+    this->currentFile = "New Document1";
     this->warning = "Do you want to save the changes made to the document \"" + currentFile + "\"?";
 }
 
@@ -45,12 +45,18 @@ void Notepad::on_actionOpen_triggered() {
 }
 
 void Notepad::on_actionSave_triggered() {
+    while(Notepad::fileExists(currentFile)) {
+        QByteArray data = currentFile.toUtf8();
+        int i = (int)data.at(data.length() - 1) - 48;
+        data.replace(data.length() - 1, 1, QByteArray::number(i + 1));
+        currentFile = QString::fromUtf8(data.data());
+    }
     QFile file(currentFile);
+    //qInfo() << file.fileName();
     if (!file.open(QIODevice::WriteOnly | QFile::Text)) {
         QMessageBox::warning(this, "..", "File not saved");
         return;
     }
-    qInfo() << file.fileName();
     QTextStream out(&file);
     QString text = ui->textEdit->toPlainText();
     out << text;
@@ -116,4 +122,12 @@ void Notepad::on_actionUndo_triggered() {
 
 void Notepad::on_actionRedo_triggered() {
     ui->textEdit->redo();
+}
+
+bool Notepad::fileExists(QString path) {
+    QFileInfo checkFile(path);
+    if (checkFile.exists() && checkFile.isFile()) {
+        return true;
+    }
+    return false;
 }
