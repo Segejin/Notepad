@@ -4,8 +4,8 @@
 Notepad::Notepad(QWidget *parent) : QMainWindow(parent), ui(new Ui::Notepad) {
     ui->setupUi(this);
     this->setCentralWidget(ui->textEdit);
-    this->currentFile = "New Document1";
-    this->warning = "Do you want to save the changes made to the document \"" + currentFile + "\"?";
+    this->saved = false;
+    this->currentFile = Notepad::setDefaultFile();
 }
 
 Notepad::~Notepad() {
@@ -14,10 +14,11 @@ Notepad::~Notepad() {
 
 void Notepad::on_actionNew_triggered() {
     if(ui->textEdit->toPlainText() != "") {
-        int selection = QMessageBox::warning(this,"..", warning, "Don't Save", "Cancel", "Save...");
+        int selection = QMessageBox::warning(this,"..", Notepad::setWarning(), "Don't Save", "Cancel", "Save...");
         switch(selection) {
             case 0:
                 ui->textEdit->setText("");
+                Notepad::setDefaultFile();
                 break;
             case 1:
                 break;
@@ -32,26 +33,25 @@ void Notepad::on_actionNew_triggered() {
 
 void Notepad::on_actionOpen_triggered() {
     QString fileName = QFileDialog::getOpenFileName(this, "Open the file");
-    QFile file(fileName);
-    currentFile = fileName;
-    if (!file.open(QIODevice::ReadOnly | QFile::Text)) {
-        QMessageBox::warning(this, "..", "File not opened.");
+    if(!fileName.isEmpty()) {
+        QFile file(fileName);
+        currentFile = fileName;
+        if (!file.open(QIODevice::ReadOnly | QFile::Text)) {
+            QMessageBox::warning(this, "..", "File not opened.");
+            return;
+        }
+        QTextStream in(&file);
+        ui->textEdit->setText(in.readAll());
+        file.close();
         return;
     }
-    QTextStream in(&file);
-    QString text = in.readAll();
-    ui->textEdit->setText(text);
-    file.close();
+    return;
 }
 
 void Notepad::on_actionSave_triggered() {
-    int digits;
-    while(Notepad::fileExists(currentFile)) {
-        QByteArray data = currentFile.toUtf8();
-        int i = static_cast<int>(data.at(data.length() - 1)) - 48;
-        digits = Notepad::numDigits(i);
-        data.replace(data.length() - digits, digits, QByteArray::number(i + 1));
-        currentFile = QString::fromUtf8(data.data());
+    if(!saved) {
+        Notepad::on_actionSave_As_triggered();
+        return;
     }
     QFile file(currentFile);
     if (!file.open(QIODevice::WriteOnly | QFile::Text)) {
@@ -59,8 +59,7 @@ void Notepad::on_actionSave_triggered() {
         return;
     }
     QTextStream out(&file);
-    QString text = ui->textEdit->toPlainText();
-    out << text;
+    out << ui->textEdit->toPlainText();
     file.flush();
     file.close();
 }
@@ -75,10 +74,10 @@ int Notepad::on_actionSave_As_triggered() {
             return 0;
         }
         QTextStream out(&file);
-        QString text = ui->textEdit->toPlainText();
-        out << text;
+        out << ui->textEdit->toPlainText();
         file.flush();
         file.close();
+        saved = true;
         return 1;
     }
     return 0;
@@ -90,7 +89,7 @@ void Notepad::on_actionPrint_triggered() {
 
 void Notepad::on_actionExit_triggered() {
     if(ui->textEdit->toPlainText() != "") {
-        int selection = QMessageBox::warning(this,"..", warning, "Don't Save", "Cancel", "Save...");
+        int selection = QMessageBox::warning(this,"..", setWarning(), "Don't Save", "Cancel", "Save...");
         switch(selection) {
             case 0:
                 QCoreApplication::quit();
@@ -123,6 +122,28 @@ void Notepad::on_actionUndo_triggered() {
 
 void Notepad::on_actionRedo_triggered() {
     ui->textEdit->redo();
+}
+
+QString Notepad::setWarning() {
+    this->nameWarning = "Do you want to save the changes made to the document \"" + currentFile + "\"?";
+    return(nameWarning);
+}
+
+QString Notepad::setDefaultFile() {
+    QString defaultName = "Untitled";
+    int digits;
+    while(Notepad::fileExists(defaultName)) {
+        QByteArray data = defaultName.toUtf8();
+        if(QChar::isDigit(data.at(data.length() - 1))) {
+            int i = static_cast<int>(data.at(data.length() - 1)) - 48;
+            digits = Notepad::numDigits(i);
+            data.replace(data.length() - digits, digits, QByteArray::number(i + 1));
+            defaultName = QString::fromUtf8(data.data());
+        } else {
+            defaultName.append('1');
+        }
+    }
+    return defaultName;
 }
 
 bool Notepad::fileExists(QString path) {

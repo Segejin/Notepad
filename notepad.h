@@ -27,13 +27,16 @@ private slots:
     void on_actionPaste_triggered();
     void on_actionUndo_triggered();
     void on_actionRedo_triggered();
+    QString setWarning();
+    QString setDefaultFile();
     bool fileExists(QString path);
     int numDigits(int x);
 
 private:
     Ui::Notepad *ui;
+    bool saved;
     QString currentFile;
-    QString warning;
+    QString nameWarning;
 };
 
 #endif // NOTEPAD_H
