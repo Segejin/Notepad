@@ -2,10 +2,13 @@
 #define NOTEPAD_H
 
 #include <QMainWindow>
+#include <QShortcut>
 #include <QtWidgets>
+#include <QPrinter>
+#include <QPrintDialog>
 
 namespace Ui {
-class Notepad;
+    class Notepad;
 }
 
 class Notepad : public QMainWindow {
@@ -27,6 +30,8 @@ private slots:
     void on_actionPaste_triggered();
     void on_actionUndo_triggered();
     void on_actionRedo_triggered();
+    void on_actionFind_triggered();
+    void on_actionReplace_triggered();
     QString setWarning();
     QString setDefaultFile();
     bool fileExists(QString path);

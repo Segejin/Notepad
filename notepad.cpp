@@ -3,6 +3,8 @@
 
 Notepad::Notepad(QWidget *parent) : QMainWindow(parent), ui(new Ui::Notepad) {
     ui->setupUi(this);
+    QShortcut *shortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_F), this);
+    QObject::connect(shortcut, &QShortcut::activated, this, &Notepad::on_actionFind_triggered);
     this->setCentralWidget(ui->textEdit);
     this->saved = false;
     this->currentFile = Notepad::setDefaultFile();
@@ -19,6 +21,7 @@ void Notepad::on_actionNew_triggered() {
             case 0:
                 ui->textEdit->setText("");
                 Notepad::setDefaultFile();
+                saved = false;
                 break;
             case 1:
                 break;
@@ -60,12 +63,12 @@ void Notepad::on_actionSave_triggered() {
     }
     QTextStream out(&file);
     out << ui->textEdit->toPlainText();
-    file.flush();
+    out.flush();
     file.close();
 }
 
 int Notepad::on_actionSave_As_triggered() {
-    QString fileName = QFileDialog::getSaveFileName(this, "Save as");
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save as"), Notepad::setDefaultFile(), tr("Text files (*.txt)"));
     if(!fileName.isEmpty()) {
         QFile file(fileName);
         currentFile = fileName;
@@ -75,7 +78,7 @@ int Notepad::on_actionSave_As_triggered() {
         }
         QTextStream out(&file);
         out << ui->textEdit->toPlainText();
-        file.flush();
+        out.flush();
         file.close();
         saved = true;
         return 1;
@@ -84,7 +87,15 @@ int Notepad::on_actionSave_As_triggered() {
 }
 
 void Notepad::on_actionPrint_triggered() {
-    //QPrinter printer = QFileDialog::getPrinterName(this, "Save as");
+    QPrinter printer;
+    QPrintDialog *dialog = new QPrintDialog(&printer, this);
+    dialog->setWindowTitle(tr("Print Document"));
+    if (ui->textEdit->textCursor().hasSelection()) {
+        dialog->addEnabledOption(QAbstractPrintDialog::PrintSelection);
+    }
+    if (dialog->exec() != QDialog::Accepted) {
+        return;
+    }
 }
 
 void Notepad::on_actionExit_triggered() {
@@ -124,8 +135,79 @@ void Notepad::on_actionRedo_triggered() {
     ui->textEdit->redo();
 }
 
+void Notepad::on_actionFind_triggered() {
+    bool ok;
+    bool found = false;
+    QTextDocument *document = ui->textEdit->document();
+    QString regexp = QInputDialog::getText(this, tr("QInputDialog::getText()"),
+                                           tr("Find: "), QLineEdit::Normal, "", &ok);
+    if (ok && !regexp.isEmpty()) {
+        QRegularExpression re(regexp);
+        QString replacementText("");
+        QString dataText = ui->textEdit->toPlainText();
+        QRegularExpressionMatchIterator itr = re.globalMatch(dataText);
+        QTextCursor highlightCursor(document);
+        QTextCursor cursor(document);
+
+        cursor.beginEditBlock();
+
+        QTextCharFormat plainFormat(highlightCursor.charFormat());
+        QTextCharFormat colorFormat = plainFormat;
+        colorFormat.setForeground(Qt::red);
+
+        while (!highlightCursor.isNull() && !highlightCursor.atEnd()) {
+            highlightCursor = document->find(regexp, highlightCursor,
+                                             QTextDocument::FindWholeWords);
+
+            if (!highlightCursor.isNull()) {
+                found = true;
+                highlightCursor.movePosition(QTextCursor::WordRight,
+                                             QTextCursor::KeepAnchor);
+                highlightCursor.mergeCharFormat(colorFormat);
+            }
+        }
+
+        cursor.endEditBlock();
+
+        if (found == false) {
+            QMessageBox::information(this, tr("Word Not Found"),
+                                     tr("Sorry, the word cannot be found."));
+        }
+
+        while(itr.hasNext()) {
+            QRegularExpressionMatch match = itr.next();
+            dataText.replace(match.capturedStart(0), match.capturedLength(0), replacementText);
+        }
+    }
+}
+
+void Notepad::on_actionReplace_triggered() {
+    QDialog dialog(this);
+    QFormLayout form(&dialog);
+    QList<QLineEdit *> fields;
+    QList<QString> terms;
+    terms.append("Find");
+    terms.append("Replace");
+    for(int i = 0; i < 2; ++i) {
+        QLineEdit *lineEdit = new QLineEdit(&dialog);
+        QString label = QString("%1").arg(terms.at(i));
+        form.addRow(label, lineEdit);
+        fields << lineEdit;
+    }
+    QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
+                               Qt::Horizontal, &dialog);
+    form.addRow(&buttonBox);
+    QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
+    QObject::connect(&buttonBox, SIGNAL(rejected()), &dialog, SLOT(reject()));
+    if (dialog.exec() == QDialog::Accepted) {
+        foreach(QLineEdit * lineEdit, fields) {
+            qDebug() << lineEdit->text();
+        }
+    }
+}
+
 QString Notepad::setWarning() {
-    this->nameWarning = "Do you want to save the changes made to the document \"" + currentFile + "\"?";
+    this->nameWarning = "Do you want to save \"" + currentFile + "\"?";
     return(nameWarning);
 }
 
@@ -147,7 +229,7 @@ QString Notepad::setDefaultFile() {
 }
 
 bool Notepad::fileExists(QString path) {
-    QFileInfo checkFile(path);
+    QFileInfo checkFile(path + ".txt");
     if (checkFile.exists() && checkFile.isFile()) {
         return true;
     }
