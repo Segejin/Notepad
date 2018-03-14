@@ -6,6 +6,8 @@
 #include <QtWidgets>
 #include <QPrinter>
 #include <QPrintDialog>
+#include <QSyntaxHighlighter>
+#include "highlighter.h"
 
 namespace Ui {
     class Notepad;
@@ -42,6 +44,7 @@ private:
     bool saved;
     QString currentFile;
     QString nameWarning;
+    Highlighter *highlighter;
 };
 
 #endif // NOTEPAD_H

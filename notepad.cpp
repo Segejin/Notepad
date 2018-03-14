@@ -8,6 +8,12 @@ Notepad::Notepad(QWidget *parent) : QMainWindow(parent), ui(new Ui::Notepad) {
     this->setCentralWidget(ui->textEdit);
     this->saved = false;
     this->currentFile = Notepad::setDefaultFile();
+    QFont font;
+    font.setFamily("Courier");
+    font.setFixedPitch(true);
+    font.setPointSize(10);
+    ui->textEdit->setFont(font);
+    highlighter = new Highlighter(ui->textEdit->document());
 }
 
 Notepad::~Notepad() {
