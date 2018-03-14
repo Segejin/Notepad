@@ -138,45 +138,33 @@ void Notepad::on_actionRedo_triggered() {
 void Notepad::on_actionFind_triggered() {
     bool ok;
     bool found = false;
+    int count = 0;
     QTextDocument *document = ui->textEdit->document();
-    QString regexp = QInputDialog::getText(this, tr("QInputDialog::getText()"),
-                                           tr("Find: "), QLineEdit::Normal, "", &ok);
+    QString regexp = QInputDialog::getText(this, tr("QInputDialog::getText()"), tr("Find: "), QLineEdit::Normal, "", &ok);
+    QString notFound = "Cannot find \"" + regexp + "\"";
     if (ok && !regexp.isEmpty()) {
         QRegularExpression re(regexp);
-        QString replacementText("");
         QString dataText = ui->textEdit->toPlainText();
-        QRegularExpressionMatchIterator itr = re.globalMatch(dataText);
         QTextCursor highlightCursor(document);
         QTextCursor cursor(document);
-
         cursor.beginEditBlock();
-
         QTextCharFormat plainFormat(highlightCursor.charFormat());
         QTextCharFormat colorFormat = plainFormat;
-        colorFormat.setForeground(Qt::red);
+        colorFormat.setBackground(Qt::red);
 
         while (!highlightCursor.isNull() && !highlightCursor.atEnd()) {
-            highlightCursor = document->find(regexp, highlightCursor,
-                                             QTextDocument::FindWholeWords);
-
+            highlightCursor = document->find(regexp, highlightCursor, QTextDocument::FindWholeWords);
             if (!highlightCursor.isNull()) {
                 found = true;
-                highlightCursor.movePosition(QTextCursor::WordRight,
-                                             QTextCursor::KeepAnchor);
+                ++count;
+                highlightCursor.movePosition(QTextCursor::WordRight, QTextCursor::KeepAnchor);
                 highlightCursor.mergeCharFormat(colorFormat);
             }
         }
-
         cursor.endEditBlock();
 
-        if (found == false) {
-            QMessageBox::information(this, tr("Word Not Found"),
-                                     tr("Sorry, the word cannot be found."));
-        }
-
-        while(itr.hasNext()) {
-            QRegularExpressionMatch match = itr.next();
-            dataText.replace(match.capturedStart(0), match.capturedLength(0), replacementText);
+        if (!found) {
+            QMessageBox::information(this, tr("No Matches"), tr((const char*)(QByteArray)notFound.toLatin1().data()));
         }
     }
 }
@@ -188,20 +176,32 @@ void Notepad::on_actionReplace_triggered() {
     QList<QString> terms;
     terms.append("Find");
     terms.append("Replace");
-    for(int i = 0; i < 2; ++i) {
+    for(int i = 0; i < terms.length(); ++i) {
         QLineEdit *lineEdit = new QLineEdit(&dialog);
         QString label = QString("%1").arg(terms.at(i));
         form.addRow(label, lineEdit);
         fields << lineEdit;
     }
-    QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
-                               Qt::Horizontal, &dialog);
+    QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+    QDialogButtonBox navigationBox(&dialog);
+    navigationBox.addButton("Find Previous", QDialogButtonBox::ApplyRole);
+    navigationBox.addButton("Find Next", QDialogButtonBox::ApplyRole);
     form.addRow(&buttonBox);
+    form.addRow(&navigationBox);
     QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
     QObject::connect(&buttonBox, SIGNAL(rejected()), &dialog, SLOT(reject()));
     if (dialog.exec() == QDialog::Accepted) {
-        foreach(QLineEdit * lineEdit, fields) {
-            qDebug() << lineEdit->text();
+        QString regexp = fields.at(0)->text();
+        QString replacementText = fields.at(1)->text();
+        if (!regexp.isEmpty()) {
+            QRegularExpression re(regexp);
+            QString dataText = ui->textEdit->toPlainText();
+            QRegularExpressionMatchIterator itr = re.globalMatch(dataText);
+            while(itr.hasNext()) {
+                QRegularExpressionMatch match = itr.next();
+                dataText.replace(match.capturedStart(0), match.capturedLength(0), replacementText);
+            }
+            ui->textEdit->setText(dataText);
         }
     }
 }
